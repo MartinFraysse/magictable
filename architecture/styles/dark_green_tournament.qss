@@ -1,0 +1,273 @@
+/* =====================
+   TOURNAMENT – MAIN VIEW
+===================== */
+
+#TournamentView {
+    background-color: transparent;
+}
+
+/* Espacement vertical homogène entre sous-vues */
+#TournamentView QWidget {
+    margin-bottom: 20px;
+}
+
+
+/* =====================
+   UPCOMING TOURNAMENTS
+===================== */
+
+#UpcomingColumn {
+    background-color: #1e2622;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Titre */
+#UpcomingColumn QLabel#SectionTitle {
+    font-size: 15px;
+    font-weight: 800;
+    color: #eafff5;
+}
+
+/* Liste */
+#TournamentList {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    padding: 6px;
+    color: #eafff5;
+}
+
+#TournamentList::item {
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+
+#TournamentList::item:hover {
+    background-color: rgba(63, 210, 125, 0.12);
+}
+
+#TournamentList::item:selected {
+    background-color: rgba(63, 210, 125, 0.28);
+    color: #ffffff;
+}
+
+/* Actions */
+#UpcomingColumn QPushButton {
+    min-height: 36px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+#UpcomingColumn QPushButton:disabled {
+    opacity: 0.4;
+}
+
+
+/* =====================
+   LAUNCH TOURNAMENT
+===================== */
+
+#TournamentCard {
+    background-color: #0b2f23;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Titre */
+#TournamentCard QLabel#TournamentCardTitle {
+    font-size: 15px;
+    font-weight: 800;
+    color: #eafff5;
+    margin-bottom: 6px;
+}
+
+/* Texte */
+#TournamentCard QLabel {
+    color: #cfeee2;
+}
+
+/* Bouton */
+#TournamentCard QPushButton {
+    min-height: 38px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+#TournamentCard QPushButton:disabled {
+    opacity: 0.4;
+}
+
+
+/* =====================
+   HISTORIC TOURNAMENTS
+===================== */
+
+#HistoricTournamentCard {
+    background-color: #0b2f23;
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Titre */
+#HistoricTournamentCard QLabel#HistoricTitle {
+    font-size: 15px;
+    font-weight: 800;
+    color: #eafff5;
+    margin-bottom: 6px;
+}
+
+/* Liste */
+#HistoricTournamentCard QListWidget {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    padding: 6px;
+    color: #eafff5;
+}
+
+#HistoricTournamentCard QListWidget::item {
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+
+#HistoricTournamentCard QListWidget::item:hover {
+    background-color: rgba(63, 210, 125, 0.12);
+}
+
+
+/* =====================
+   CREATE TOURNAMENT - DIALOG
+===================== */
+
+QDialog#CreateTournamentDialog {
+    background-color: #0b2f23;
+    border-radius: 18px;
+}
+
+QDialog#CreateTournamentDialog QLabel#DialogTitle {
+    font-size: 18px;
+    font-weight: 800;
+    color: #eafff5;
+}
+
+
+/* ===== Inputs ===== */
+
+QDialog#CreateTournamentDialog QLineEdit,
+QDialog#CreateTournamentDialog QComboBox {
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: #eafff5;
+}
+
+QDialog#CreateTournamentDialog QLineEdit:focus,
+QDialog#CreateTournamentDialog QComboBox:focus {
+    border: 1px solid #3fd27d;
+    background-color: rgba(63, 210, 125, 0.08);
+}
+
+QDialog#CreateTournamentDialog QLineEdit::placeholder {
+    color: #8fcfb5;
+}
+
+
+/* ===== Inline frame ===== */
+
+QDialog#CreateTournamentDialog QFrame#InlineFrame {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 14px;
+}
+
+
+/* ===== Players input ===== */
+
+QDialog#CreateTournamentDialog QLineEdit#PlayersInput {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid #3fd27d;
+    padding: 6px 10px;
+    color: #eafff5;
+    font-weight: 700;
+}
+
+QDialog#CreateTournamentDialog QLineEdit#PlayersInput:focus {
+    background-color: rgba(63, 210, 125, 0.12);
+    border: 1px solid #6ef0a3;
+}
+
+
+/* ===== Preview ===== */
+
+QDialog#CreateTournamentDialog QFrame#TournamentPreview {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 #184a39,
+        stop:1 #0f2f25
+    );
+    border-radius: 16px;
+    padding: 16px;
+    color: #eafff5;
+}
+
+
+/* ===== Buttons ===== */
+
+QDialog#CreateTournamentDialog QPushButton {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 #0a0a0a,
+        stop:1 #000000
+    );
+    border: none;
+    border-radius: 14px;
+    padding: 10px 24px;
+    font-weight: 800;
+    color: #eafff5;
+}
+
+QDialog#CreateTournamentDialog QPushButton:hover {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 #113a2b,
+        stop:1 #050505
+    );
+}
+
+QDialog#CreateTournamentDialog QPushButton#CreateButton {
+    color: #3fd27d;
+}
+
+QDialog#CreateTournamentDialog QPushButton#CreateButton:hover {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 rgba(63, 210, 125, 0.25),
+        stop:1 #000000
+    );
+}
+
+QDialog#CreateTournamentDialog QPushButton#CreateButton:disabled {
+    color: rgba(63, 210, 125, 0.3);
+}
+
+
+/* =====================
+   Players labels
+===================== */
+
+QDialog#CreateTournamentDialog QLabel#PlayersLabel {
+    color: rgba(234, 255, 245, 1);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+}
+
+QDialog#CreateTournamentDialog QLabel#PlayersIcon {
+    font-size: 20px;
+}
