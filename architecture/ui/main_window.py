@@ -2,11 +2,17 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget,
     QHBoxLayout, QVBoxLayout,
     QLabel, QPushButton, QFrame,
-    QGraphicsDropShadowEffect,
-    QProgressBar, QButtonGroup
+    QButtonGroup, QSizePolicy
 )
-from PySide6.QtCore import Qt, QPropertyAnimation, QRect
-from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QStackedWidget
+from ui.dashboard_view import DashboardView
+from ui.tournaments_view import TournamentsView
+from ui.players_view import PlayersView
+from ui.matches_view import MatchesView
+from ui.settings_view import SettingsView
+from ui.dashboard_view import DashboardView
+
 
 
 class MainWindow(QMainWindow):
@@ -14,39 +20,35 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("MagicTable — Tournament Manager")
-        # Taille standard de référence
-        self.resize(1920, 1080)
 
-        # Taille minimale (sécurité layout)
-        self.setMinimumSize(1920, 1080)
+        # Taille standard
+        self.resize(1280, 800)
+        self.setMinimumSize(1280, 800)
 
-        # Fenêtre flottante (Wayland / Hyprland friendly)
-        self.setWindowFlags(
-            Qt.Window |
-            Qt.WindowMinimizeButtonHint |
-            Qt.WindowCloseButtonHint
-        )
-
-
-        screen = self.screen().availableGeometry()
-        window = self.frameGeometry()
-        window.moveCenter(screen.center())
-        self.move(window.topLeft())
-
-        self.animations = []
-
+        # === CENTRAL ROOT ===
         central = QWidget()
         self.setCentralWidget(central)
 
-        root = QHBoxLayout(central)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        root_layout = QHBoxLayout(central)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
-        root.addWidget(self._sidebar())
-        root.addWidget(self._main_area())
+        # === SIDEBAR ===
+        self.sidebar = self._build_sidebar()
+        root_layout.addWidget(self.sidebar)
 
-    # -------- Sidebar --------
-    def _sidebar(self):
+        # === CONTENT CONTAINER ===
+        self.content_container = self._build_content_container()
+        root_layout.addWidget(self.content_container)
+
+        # === CONNECT NAVIGATION ===
+        for index, btn in enumerate(self.nav_buttons):
+            btn.clicked.connect(lambda checked, i=index: self.stack.setCurrentIndex(i))
+
+    # ========================
+    # Sidebar
+    # ========================
+    def _build_sidebar(self):
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
         sidebar.setFixedWidth(260)
@@ -55,14 +57,18 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
+        # Logo
         logo = QLabel("🟢  MagicTable")
         logo.setObjectName("Logo")
         layout.addWidget(logo)
 
         layout.addSpacing(30)
 
+        # Navigation
         self.nav_group = QButtonGroup()
         self.nav_group.setExclusive(True)
+
+        self.nav_buttons = []
 
         for icon, name in [
             ("📊", "Dashboard"),
@@ -74,12 +80,15 @@ class MainWindow(QMainWindow):
             btn = QPushButton(f"{icon}  {name}")
             btn.setObjectName("NavButton")
             btn.setCheckable(True)
-            btn.setCursor(Qt.PointingHandCursor)
             btn.setMinimumHeight(44)
+            btn.setCursor(Qt.PointingHandCursor)
 
             self.nav_group.addButton(btn)
+            self.nav_buttons.append(btn)
             layout.addWidget(btn)
 
+
+        # Actif par défaut
         self.nav_group.buttons()[0].setChecked(True)
 
         layout.addStretch()
@@ -91,87 +100,37 @@ class MainWindow(QMainWindow):
 
         return sidebar
 
-    # -------- Main area --------
-    def _main_area(self):
-        area = QWidget()
-        layout = QVBoxLayout(area)
+    # ========================
+    # Content container
+    # ========================
+    def _build_content_container(self):
+        container = QFrame()
+        container.setObjectName("ContentContainer")
+
+        container.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Expanding
+        )
+
+        layout = QVBoxLayout(container)
         layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(25)
+        layout.setSpacing(0)
 
-        layout.addWidget(self._header())
+        # === STACK DE VUES ===
+        self.stack = QStackedWidget()
 
-        content = QFrame()
-        content.setObjectName("ContentArea")
-        layout.addWidget(content)
+        self.dashboard_view = DashboardView()
+        self.tournaments_view = TournamentsView()
+        self.players_view = PlayersView()
+        self.matches_view = MatchesView()
+        self.settings_view = SettingsView()
 
-        return area
+        self.stack.addWidget(self.dashboard_view)   # index 0
+        self.stack.addWidget(self.tournaments_view) # index 1
+        self.stack.addWidget(self.players_view)     # index 2
+        self.stack.addWidget(self.matches_view)     # index 3
+        self.stack.addWidget(self.settings_view)    # index 4
 
-    # -------- Header --------
-    def _header(self):
-        header = QFrame()
-        header.setObjectName("Header")
+        layout.addWidget(self.stack)
 
-        layout = QHBoxLayout(header)
-        layout.setSpacing(20)
-
-        cards = [
-            ("🟢", "État du tournoi", "En cours", 65),
-            ("👥", "Joueurs", "24", 80),
-            ("⚔️", "Matchs", "5", 40),
-            ("📅", "Prochaine ronde", "14:30", 100),
-        ]
-
-        for icon, title, value, progress in cards:
-            card = self._stat_card(icon, title, value, progress)
-            layout.addWidget(card)
-            self._animate_card(card)
-
-        return header
-
-    def _stat_card(self, icon, title, value, progress_value):
-        card = QFrame()
-        card.setObjectName("StatCard")
-        card.setCursor(Qt.PointingHandCursor)
-
-        shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(35)
-        shadow.setYOffset(12)
-        shadow.setColor(QColor(0, 0, 0, 180))
-        card.setGraphicsEffect(shadow)
-
-        layout = QVBoxLayout(card)
-        layout.setSpacing(6)
-
-        i = QLabel(icon)
-        i.setObjectName("StatIcon")
-
-        val = QLabel(value)
-        val.setObjectName("StatValue")
-
-        t = QLabel(title)
-        t.setObjectName("StatTitle")
-
-        progress = QProgressBar()
-        progress.setObjectName("StatProgress")
-        progress.setRange(0, 100)
-        progress.setValue(progress_value)
-        progress.setFixedHeight(6)
-        progress.setTextVisible(False)
-
-        layout.addWidget(i)
-        layout.addWidget(val)
-        layout.addWidget(t)
-        layout.addWidget(progress)
-
-        return card
-
-    def _animate_card(self, card):
-        anim = QPropertyAnimation(card, b"geometry")
-        anim.setDuration(600)
-
-        g = card.geometry()
-        anim.setStartValue(QRect(g.x(), g.y() + 30, g.width(), g.height()))
-        anim.setEndValue(g)
-
-        anim.start()
-        self.animations.append(anim)
+        return container
