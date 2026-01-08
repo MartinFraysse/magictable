@@ -1,0 +1,130 @@
+/* =====================
+   GLOBAL
+===================== */
+
+QMainWindow {
+    background-color: #071e17;
+    color: #eafff5;
+    font-family: Inter, Segoe UI, sans-serif;
+}
+
+/* =====================
+   SIDEBAR
+===================== */
+
+#Sidebar {
+    background-color: #0b2f23;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+#Logo {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* Navigation */
+#NavButton {
+    background: transparent;
+    border: none;
+    color: #cfeee2;
+    padding: 12px 16px;
+    text-align: left;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+#NavButton:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+#NavButton:checked {
+    background-color: #1e6f50;
+    color: #ecfff9;
+    font-weight: 700;
+}
+
+/* Quit */
+#QuitButton {
+    background-color: #a93226;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+/* =====================
+   HEADER
+===================== */
+
+#Header {
+    background: transparent;
+}
+
+/* =====================
+   STAT CARDS
+===================== */
+
+#StatCard {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 #143f31,
+        stop:1 #0f2f25
+    );
+    border-radius: 16px;
+    padding: 18px;
+    min-width: 180px;
+}
+
+
+#StatCard:hover {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:0, y2:1,
+        stop:0 #184a39,
+        stop:1 #12372b
+    );
+}
+
+/* Text */
+#StatIcon {
+    font-size: 22px;
+    color: #9fe3c4;
+}
+
+#StatValue {
+    font-size: 30px;
+    font-weight: 800;
+    color: #eafff5;
+}
+
+#StatTitle {
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: #8fcfb5;
+}
+
+/* =====================
+   PROGRESS BAR
+===================== */
+
+#StatProgress {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+}
+
+#StatProgress::chunk {
+    background-color: #3fd27d;
+    border-radius: 3px;
+}
+
+/* =====================
+   CONTENT AREA
+===================== */
+
+#ContentArea {
+    background-color: #0b2f23;
+    border-radius: 18px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
