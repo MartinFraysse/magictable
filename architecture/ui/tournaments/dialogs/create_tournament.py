@@ -9,9 +9,10 @@ from ui.widgets.down_only_combo_box import DownOnlyComboBox
 
 
 class CreateTournamentDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, data: dict | None = None):
         super().__init__(parent)
 
+        self._edit_mode = data is not None
         self.setWindowTitle("Nouveau tournoi")
         self.setModal(True)
         self.setFixedSize(380, 380)
@@ -24,9 +25,9 @@ class CreateTournamentDialog(QDialog):
         # =====================
         # Title
         # =====================
-        title = QLabel("🏆 Nouveau tournoi")
+        title_text = "✏️ Modifier le tournoi" if self._edit_mode else "🏆 Nouveau tournoi"
+        title = QLabel(title_text)
         title.setObjectName("DialogTitle")
-        root.addWidget(title)
 
         # =====================
         # Name
@@ -44,8 +45,8 @@ class CreateTournamentDialog(QDialog):
 
         self.format_input = DownOnlyComboBox()
         self.format_input.addItems([
-            "Commander", "Draft", "AP Magic",
-            "Pokemon ?", "Rise ?"
+            "👑 Commander", "⚔️ Duel Commander", "🃏 Draft", "🌱 AP Magic",
+            "⚡ Pokemon", "🔥 Rise"
         ])
         self.format_input.currentTextChanged.connect(self._update_preview)
 
@@ -53,6 +54,8 @@ class CreateTournamentDialog(QDialog):
         self.date_input.setInputMask("00/00/0000;_")
         self.date_input.setFixedWidth(110)
         self.date_input.setAlignment(Qt.AlignCenter)
+        self.date_input.textChanged.connect(self._update_preview)
+
 
         row.addWidget(self.format_input)
         row.addWidget(self.date_input)
@@ -104,22 +107,38 @@ class CreateTournamentDialog(QDialog):
         # Actions
         # =====================
         actions = QHBoxLayout()
+        actions.setSpacing(12)          # ← espace ENTRE les boutons
+        actions.setContentsMargins(0, 12, 0, 0)  # ← espace AU-DESSUS des boutons
         actions.addStretch()
 
         self.cancel_btn = QPushButton("Annuler")
         self.cancel_btn.setObjectName("CancelButton")
         self.cancel_btn.clicked.connect(self.reject)
 
-        self.create_btn = QPushButton("Créer")
+        self.create_btn = QPushButton("Modifier" if self._edit_mode else "Créer")
         self.create_btn.setObjectName("CreateButton")
         self.create_btn.setEnabled(False)
         self.create_btn.clicked.connect(self._validate)
 
+        self.create_btn.setDefault(True)
+        self.create_btn.setAutoDefault(True)
+
+        self.cancel_btn.setAutoDefault(False)
+
+
+
         actions.addWidget(self.cancel_btn)
         actions.addWidget(self.create_btn)
+
         root.addLayout(actions)
 
+
+
         self._update_preview()
+
+        if data:
+            self._load_data(data)
+
 
     # =====================
     # Logic
@@ -128,10 +147,14 @@ class CreateTournamentDialog(QDialog):
         name = self.name_input.text().strip()
         self.create_btn.setEnabled(bool(name))
 
+        date = self.date_input.text()
+        if "_" in date:
+            date = "Date"
+
         self.preview.setText(
             f"<b>{name or 'Nom du tournoi'}</b><br>"
             f"{self.format_input.currentText()} • "
-            f"{self.date_input.text()} • "
+            f"{date} • "
             f"{self.players_input.text()} joueurs"
         )
 
@@ -148,3 +171,14 @@ class CreateTournamentDialog(QDialog):
             "date": self.date_input.text(),
             "players": int(self.players_input.text()),
         }
+
+    # =====================
+    # Edit mode
+    # =====================
+    def _load_data(self, data: dict):
+        self.name_input.setText(data.get("name", ""))
+        self.format_input.setCurrentText(data.get("format", ""))
+        self.date_input.setText(data.get("date", ""))
+        self.players_input.setText(str(data.get("players", "")))
+
+        self._update_preview()

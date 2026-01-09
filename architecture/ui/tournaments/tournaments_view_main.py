@@ -1,108 +1,104 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-from ui.tournaments.upcoming_view import UpcomingTournamentsView
-from ui.tournaments.launch_view import LaunchTournamentView
-from ui.tournaments.historic_view import HistoricTournamentsView
-from ui.tournaments.dialogs.create_tournament import CreateTournamentDialog
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QFrame,
+)
+from PySide6.QtCore import Qt
 
+from ui.tournaments.upcoming_view import UpcomingView
+from ui.tournaments.launch_view import LaunchView
+from ui.tournaments.historic_view import HistoricView
 
 
 class TournamentViewMain(QWidget):
+    """
+    Vue principale de la page Tournament.
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # === DONNÉES PARTAGÉES (mock pour l’instant) ===
-        self.upcoming_tournaments = [
-            {"id": 1, "name": "Friday Night Magic", "date": "2024-10-04", "format": "Commander"},
-            {"id": 2, "name": "Modern League", "date": "2024-10-11", "format": "Modern"},
-        ]
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setObjectName("TournamentViewMain")
 
-        self.historic_tournaments = [
-            {"id": 99, "name": "Commander Cup", "date": "2024-09-20", "winner": "Martin", "players": 24},
-        ]
+        self._build_ui()
 
-        self.active_tournament = None
+    # =========================
+    # UI
+    # =========================
+    def _build_ui(self):
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(20)
 
-        # === LAYOUT ===
-        root = QVBoxLayout(self)
-        root.setSpacing(30)
-        root.setContentsMargins(0, 0, 0, 0)
+        # =========================
+        # Top area (Upcoming | Launch)
+        # =========================
+        top_container = QFrame()
+        top_container.setObjectName("TournamentTopContainer")
+        top_container.setAttribute(Qt.WA_StyledBackground, True)
 
-        # === SOUS-VUES ===
-        self.upcoming_view = UpcomingTournamentsView(self)
-        self.launch_view = LaunchTournamentView(self)
-        self.historic_view = HistoricTournamentsView(self)
+        top_layout = QHBoxLayout(top_container)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(20)
 
-        root.addWidget(self.upcoming_view)
-        root.addWidget(self.launch_view)
-        root.addWidget(self.historic_view)
-        root.addStretch()
+        # === Upcoming (LEFT)
+        self.upcoming_container = self._build_upcoming_container()
+        top_layout.addWidget(self.upcoming_container, 1)
 
-        # === LIAISONS ===
-        self.upcoming_view.tournament_selected.connect(
-            self.launch_view.set_selected_tournament
-        )
-        self.launch_view.tournament_launched.connect(
-            self._on_tournament_launched
-        )
+        # === Launch (RIGHT)
+        self.launch_container = self._build_launch_container()
+        top_layout.addWidget(self.launch_container, 2)
 
-        self.upcoming_view.create_requested.connect(
-            self._open_create_tournament
-        )
+        root_layout.addWidget(top_container, 1)
 
-        self.upcoming_view.launch_requested.connect(
-            self._launch_tournament
-        )
+        # =========================
+        # Bottom area (Historic)
+        # =========================
+        self.historic_container = self._build_historic_container()
+        root_layout.addWidget(self.historic_container, 0)
 
+    # =========================
+    # Sub-containers
+    # =========================
+    def _build_upcoming_container(self):
+        frame = QFrame()
+        frame.setObjectName("UpcomingContainer")
+        frame.setAttribute(Qt.WA_StyledBackground, True)
 
-        # Init
-        self.upcoming_view.set_tournaments(self.upcoming_tournaments)
-        self.historic_view.set_tournaments(self.historic_tournaments)
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-    # =================================================
-    # LOGIQUE CENTRALE
-    # =================================================
-    def _on_tournament_launched(self, tournament: dict):
-        self.active_tournament = tournament
+        self.upcoming_view = UpcomingView(self)
+        layout.addWidget(self.upcoming_view)
 
-        # retirer de "à venir"
-        self.upcoming_tournaments = [
-            t for t in self.upcoming_tournaments if t["id"] != tournament["id"]
-        ]
+        return frame
 
-        # (plus tard) → déplacer en historique quand terminé
-        self.upcoming_view.set_tournaments(self.upcoming_tournaments)
+    def _build_launch_container(self):
+        frame = QFrame()
+        frame.setObjectName("LaunchContainer")
+        frame.setAttribute(Qt.WA_StyledBackground, True)
 
-    def _launch_tournament(self, tournament: dict):
-        self.active_tournament = tournament
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Retirer de "à venir"
-        self.upcoming_tournaments = [
-            t for t in self.upcoming_tournaments if t["id"] != tournament["id"]
-        ]
+        self.launch_view = LaunchView(self)
+        layout.addWidget(self.launch_view)
 
-        self.upcoming_view.set_tournaments(self.upcoming_tournaments)
+        return frame
 
-        # Mettre à jour la colonne active
-        self.active_view.set_tournament(tournament)
+    def _build_historic_container(self):
+        frame = QFrame()
+        frame.setObjectName("HistoricContainer")
+        frame.setAttribute(Qt.WA_StyledBackground, True)
+        frame.setMaximumHeight(72)
 
-    def _open_create_tournament(self):
-        dialog = CreateTournamentDialog(self)
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        if dialog.exec() != dialog.accepted:
-            return
+        # 🔥 Intégration réelle de HistoricView
+        self.historic_view = HistoricView(self)
+        layout.addWidget(self.historic_view)
 
-        data = dialog.get_data()
-
-        # ID simple (mock)
-        new_id = max([t["id"] for t in self.upcoming_tournaments], default=0) + 1
-
-        tournament = {
-            "id": new_id,
-            "name": data["name"],
-            "format": data["format"],
-            "date": data["date"],
-            "players": data["players"],
-        }
-
-        self.upcoming_tournaments.append(tournament)
-        self.upcoming_view.set_tournaments(self.upcoming_tournaments)
+        return frame

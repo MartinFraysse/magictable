@@ -1,34 +1,58 @@
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QFrame,
+)
+from PySide6.QtCore import Qt
 
 
-class LaunchTournamentView(QFrame):
-    tournament_launched = Signal(dict)
+
+class LaunchView(QWidget):
+    """
+    Vue de lancement d’un tournoi.
+
+    Responsabilités :
+    - Accueillir un tournoi depuis Upcoming
+    - Afficher l’interface de préparation / lancement
+    """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("TournamentCard")
 
-        self.selected = None
+        self.setObjectName("LaunchView")
+        self.setAttribute(Qt.WA_StyledBackground, True)
 
-        layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("▶ Lancer un tournoi"))
+        self._build_ui()
 
-        self.label = QLabel("Aucun tournoi sélectionné")
-        self.label.setAlignment(Qt.AlignCenter)
+    # =========================
+    # UI
+    # =========================
+    def _build_ui(self):
+        root_layout = QVBoxLayout(self)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
 
-        self.btn = QPushButton("Lancer")
-        self.btn.setEnabled(False)
-        self.btn.clicked.connect(self._launch)
+        container = QFrame()
+        container.setObjectName("LaunchContainerInner")
+        container.setAttribute(Qt.WA_StyledBackground, True)
 
-        layout.addWidget(self.label)
-        layout.addWidget(self.btn)
+        layout = QVBoxLayout(container)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setSpacing(12)
 
-    def set_selected_tournament(self, tournament: dict):
-        self.selected = tournament
-        self.label.setText(f"Tournoi sélectionné : <b>{tournament['name']}</b>")
-        self.btn.setEnabled(True)
+        title = QLabel("🎮 Lancer un tournoi")
+        title.setObjectName("LaunchTitle")
+        title.setAlignment(Qt.AlignCenter)
 
-    def _launch(self):
-        if self.selected:
-            self.tournament_launched.emit(self.selected)
+        subtitle = QLabel(
+            "Sélectionnez ou déposez un tournoi\n"
+            "depuis la liste des tournois à venir"
+        )
+        subtitle.setObjectName("LaunchSubtitle")
+        subtitle.setAlignment(Qt.AlignCenter)
+
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
+
+        root_layout.addWidget(container, 1)
