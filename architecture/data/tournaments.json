@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Martin",
+    "format": "👑 Commander",
+    "date": "30/06/2001",
+    "players": []
+  },
+  {
+    "id": 3,
+    "name": "Tournoie du lundi",
+    "format": "⚔️ Duel Commander",
+    "date": "12/01/2026",
+    "players": []
+  },
+  {
+    "id": 2,
+    "name": "Tournoie de Février",
+    "format": "👑 Commander",
+    "date": "18/02/2026",
+    "players": []
+  },
+  {
+    "id": 4,
+    "name": "La féte de l'année",
+    "format": "🔥 Rise",
+    "date": "05/11/2026",
+    "players": []
+  }
+]

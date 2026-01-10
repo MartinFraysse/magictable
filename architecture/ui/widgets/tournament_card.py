@@ -1,30 +1,41 @@
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QMimeData, QPoint
+from PySide6.QtGui import QDrag
 from PySide6.QtWidgets import (
     QFrame,
     QVBoxLayout,
     QLabel,
     QMenu,
 )
+import json
+
+from core.tournament import Tournament
 
 
 class TournamentCard(QFrame):
     """
-    Carte représentant un tournoi.
+    Carte représentant un tournoi (UI uniquement).
     """
 
-    request_edit = Signal(dict)
-    request_launch = Signal(dict)
+    # Signaux vers la vue parente
+    request_edit = Signal(Tournament)
+    request_launch = Signal(Tournament)
+    request_delete = Signal(Tournament)
 
-    def __init__(self, data: dict, parent=None):
+    def __init__(self, tournament: Tournament, parent=None):
         super().__init__(parent)
 
-        self.data = data
+        self.tournament = tournament
+        self._drag_start_pos: QPoint | None = None
+
+        # État externe (fourni par UpcomingView)
+        self.launch_available: bool = True
 
         self.setObjectName("TournamentCard")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.setCursor(Qt.PointingHandCursor)
 
         self._build_ui()
+        self._refresh()
 
     # =========================
     # UI
@@ -35,55 +46,99 @@ class TournamentCard(QFrame):
         layout.setSpacing(6)
 
         # === NOM ===
-        self.title_label = QLabel(self.data.get("name", "Nom du tournoi"))
+        self.title_label = QLabel()
         self.title_label.setObjectName("TournamentCardTitle")
         self.title_label.setWordWrap(False)
-        self.title_label.setToolTip(self.data.get("name", ""))
 
         # === FORMAT ===
-        self.format_label = QLabel(self.data.get("format", ""))
+        self.format_label = QLabel()
         self.format_label.setObjectName("TournamentCardFormat")
 
         # === DATE • JOUEURS ===
-        meta_text = (
-            f'{self.data.get("date")} • '
-            f'{self.data.get("players")} joueurs'
-        )
-        self.meta_label = QLabel(meta_text)
+        self.meta_label = QLabel()
         self.meta_label.setObjectName("TournamentCardMeta")
 
         layout.addWidget(self.title_label)
         layout.addWidget(self.format_label)
         layout.addWidget(self.meta_label)
 
+    def _refresh(self):
+        """
+        Rafraîchit l'affichage depuis l'objet Tournament.
+        """
+        t = self.tournament
+
+        self.title_label.setText(t.name)
+        self.title_label.setToolTip(t.name)
+
+        self.format_label.setText(t.format)
+
+        self.meta_label.setText(
+            f"{t.date} • {t.player_count} joueurs"
+        )
+
     # =========================
-    # Context menu
+    # Context menu (clic droit)
     # =========================
     def contextMenuEvent(self, event):
         menu = QMenu(self)
 
         edit_action = menu.addAction("✏️ Modifier le tournoi")
         menu.addSeparator()
+
         launch_action = menu.addAction("🚀 Envoyer vers Launch")
+        launch_action.setEnabled(self.launch_available)
+
+        menu.addSeparator()
+        delete_action = menu.addAction("🗑️ Supprimer le tournoi")
 
         action = menu.exec(event.globalPos())
 
         if action == edit_action:
-            self.request_edit.emit(self.data)
+            self.request_edit.emit(self.tournament)
+
         elif action == launch_action:
-            self.request_launch.emit(self.data)
+            self.request_launch.emit(self.tournament)
 
-    def update_data(self, data: dict):
-        """
-        Met à jour les données de la carte et rafraîchit l'affichage.
-        """
-        self.data = data
+        elif action == delete_action:
+            self.request_delete.emit(self.tournament)
 
-        self.title_label.setText(data.get("name", ""))
-        self.format_label.setText(data.get("format", ""))
+    # =========================
+    # Drag & Drop
+    # =========================
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._drag_start_pos = event.pos()
+        super().mousePressEvent(event)
 
-        meta_text = (
-            f'{data.get("date")} • '
-            f'{data.get("players")} joueurs'
+    def mouseMoveEvent(self, event):
+        if not self._drag_start_pos:
+            return
+
+        if not (event.buttons() & Qt.LeftButton):
+            return
+
+        distance = (event.pos() - self._drag_start_pos).manhattanLength()
+        if distance < 8:
+            return
+
+        self._start_drag()
+
+    def _start_drag(self):
+        drag = QDrag(self)
+        mime = QMimeData()
+
+        # Sérialisation MÉTIER → JSON
+        payload = json.dumps(self.tournament.to_dict())
+        mime.setData(
+            "application/x-magictable-tournament",
+            payload.encode("utf-8")
         )
-        self.meta_label.setText(meta_text)
+
+        drag.setMimeData(mime)
+
+        pixmap = self.grab()
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(pixmap.rect().center())
+
+        drag.exec(Qt.MoveAction)

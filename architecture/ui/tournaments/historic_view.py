@@ -1,10 +1,10 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QPushButton,
     QFrame,
 )
-from PySide6.QtCore import Qt
 
 
 class HistoricView(QWidget):
@@ -22,6 +22,7 @@ class HistoricView(QWidget):
         self.setAttribute(Qt.WA_StyledBackground, True)
 
         self._build_ui()
+
 
     # =========================
     # UI
@@ -41,7 +42,7 @@ class HistoricView(QWidget):
         layout.addStretch()
 
         history_btn = QPushButton("📜 Historique des tournois")
-        history_btn.setObjectName("HistoricButton")
+        history_btn.setObjectName("HistoricPrimaryButton")
         history_btn.setCursor(Qt.PointingHandCursor)
 
         layout.addWidget(history_btn)

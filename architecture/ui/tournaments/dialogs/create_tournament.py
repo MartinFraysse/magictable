@@ -1,95 +1,88 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton,
-    QLabel, QFrame
+    QLabel, QComboBox,
+    QStyledItemDelegate,
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIntValidator
-from ui.widgets.down_only_combo_box import DownOnlyComboBox
+from PySide6.QtCore import Qt, QSize
+from core.tournament import Tournament
+
+
 
 
 class CreateTournamentDialog(QDialog):
-    def __init__(self, parent=None, data: dict | None = None):
+    """
+    Dialog de création / édition de tournoi.
+    """
+
+    def __init__(self, parent=None, tournament: Tournament | None = None):
         super().__init__(parent)
 
-        self._edit_mode = data is not None
-        self.setWindowTitle("Nouveau tournoi")
+        self._edit_mode = tournament is not None
+        self._tournament = tournament
+
+        self.setWindowTitle("Tournoi")
         self.setModal(True)
-        self.setFixedSize(380, 380)
+        self.setFixedSize(400, 480)
         self.setObjectName("CreateTournamentDialog")
 
         root = QVBoxLayout(self)
-        root.setSpacing(18)
-        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(22)
+        root.setContentsMargins(28, 26, 28, 26)
 
         # =====================
         # Title
         # =====================
-        title_text = "✏️ Modifier le tournoi" if self._edit_mode else "🏆 Nouveau tournoi"
-        title = QLabel(title_text)
+        title = QLabel(
+            "✏️ Modifier le tournoi" if self._edit_mode else "🏆 Nouveau tournoi"
+        )
         title.setObjectName("DialogTitle")
+        title.setAlignment(Qt.AlignCenter)
+        root.addWidget(title)
 
         # =====================
         # Name
         # =====================
         self.name_input = QLineEdit()
         self.name_input.setPlaceholderText("Nom du tournoi")
-        self.name_input.textChanged.connect(self._update_preview)
+        self.name_input.setMinimumHeight(42)
+        self.name_input.textChanged.connect(self._update_state)
         root.addWidget(self.name_input)
 
         # =====================
-        # Format + Date
+        # Format (ComboBox)
         # =====================
-        row = QHBoxLayout()
-        row.setSpacing(12)
+        self.format_input = QComboBox()
+        self.format_input.setObjectName("FormatComboBox")
+        self.format_input.setMinimumHeight(42)
+        self.format_input.setEditable(False)
 
-        self.format_input = DownOnlyComboBox()
+        self.format_input.setItemDelegate(ComboBoxItemDelegate())
+
+        self.format_input.addItem("🎴 Format du tournoi")
+        
+        # Formats prédéfinis
         self.format_input.addItems([
-            "👑 Commander", "⚔️ Duel Commander", "🃏 Draft", "🌱 AP Magic",
-            "⚡ Pokemon", "🔥 Rise"
+            "👑 Commander",
+            "⚔️ Duel Commander",
+            "🃏 Draft",
+            "🏆 AP",
+            "⚡ Pokemon",
+            "🔥 Rise",
         ])
-        self.format_input.currentTextChanged.connect(self._update_preview)
 
+        self.format_input.currentIndexChanged.connect(self._update_state)
+        root.addWidget(self.format_input)
+
+        # =====================
+        # Date
+        # =====================
         self.date_input = QLineEdit()
         self.date_input.setInputMask("00/00/0000;_")
-        self.date_input.setFixedWidth(110)
         self.date_input.setAlignment(Qt.AlignCenter)
-        self.date_input.textChanged.connect(self._update_preview)
-
-
-        row.addWidget(self.format_input)
-        row.addWidget(self.date_input)
-        root.addLayout(row)
-
-        # =====================
-        # Players
-        # =====================
-        players_frame = QFrame()
-        players_frame.setObjectName("InlineFrame")
-
-        players_layout = QHBoxLayout(players_frame)
-        players_layout.setContentsMargins(12, 8, 12, 8)
-
-        players_icon = QLabel("👥 ")
-        players_icon.setObjectName("PlayersIcon")
-
-        players_label = QLabel("Joueurs max")
-        players_label.setObjectName("PlayersLabel")
-
-        self.players_input = QLineEdit("24")
-        self.players_input.setObjectName("PlayersInput")
-        self.players_input.setValidator(QIntValidator(2, 128, self))
-        self.players_input.setFixedWidth(60)
-        self.players_input.setAlignment(Qt.AlignRight)
-        self.players_input.textChanged.connect(self._update_preview)
-        self.players_input.setAttribute(Qt.WA_StyledBackground, True)
-
-        players_layout.addWidget(players_icon)
-        players_layout.addWidget(players_label)
-        players_layout.addStretch()
-        players_layout.addWidget(self.players_input)
-
-        root.addWidget(players_frame)
+        self.date_input.setMinimumHeight(42)
+        self.date_input.textChanged.connect(self._update_state)
+        root.addWidget(self.date_input)
 
         # =====================
         # Preview
@@ -107,78 +100,95 @@ class CreateTournamentDialog(QDialog):
         # Actions
         # =====================
         actions = QHBoxLayout()
-        actions.setSpacing(12)          # ← espace ENTRE les boutons
-        actions.setContentsMargins(0, 12, 0, 0)  # ← espace AU-DESSUS des boutons
         actions.addStretch()
 
-        self.cancel_btn = QPushButton("Annuler")
-        self.cancel_btn.setObjectName("CancelButton")
-        self.cancel_btn.clicked.connect(self.reject)
+        cancel_btn = QPushButton("Annuler")
+        cancel_btn.setObjectName("CancelButton")
+        cancel_btn.clicked.connect(self.reject)
 
-        self.create_btn = QPushButton("Modifier" if self._edit_mode else "Créer")
-        self.create_btn.setObjectName("CreateButton")
-        self.create_btn.setEnabled(False)
-        self.create_btn.clicked.connect(self._validate)
+        self.confirm_btn = QPushButton(
+            "Modifier" if self._edit_mode else "Créer"
+        )
+        self.confirm_btn.setObjectName("CreateButton")
+        self.confirm_btn.setEnabled(False)
 
-        self.create_btn.setDefault(True)
-        self.create_btn.setAutoDefault(True)
+        # 🔑 CLÉ DU COMPORTEMENT ENTER
+        self.confirm_btn.setDefault(True)
+        self.confirm_btn.setAutoDefault(True)
 
-        self.cancel_btn.setAutoDefault(False)
+        self.confirm_btn.clicked.connect(self._validate)
 
 
-
-        actions.addWidget(self.cancel_btn)
-        actions.addWidget(self.create_btn)
+        actions.addWidget(cancel_btn)
+        actions.addWidget(self.confirm_btn)
 
         root.addLayout(actions)
 
+        if self._edit_mode:
+            self._load_tournament()
 
-
-        self._update_preview()
-
-        if data:
-            self._load_data(data)
-
+        self._update_state()
 
     # =====================
-    # Logic
+    # Internal logic
     # =====================
-    def _update_preview(self):
+
+    def _load_tournament(self):
+        t = self._tournament
+        self.name_input.setText(t.name)
+        self.format_input.setCurrentText(t.format)
+        self.date_input.setText(t.date)
+
+    def _update_state(self):
         name = self.name_input.text().strip()
-        self.create_btn.setEnabled(bool(name))
-
         date = self.date_input.text()
-        if "_" in date:
-            date = "Date"
 
+        format_valid = self.format_input.currentIndex() > 0
+        valid = bool(name and format_valid and "_" not in date)
+
+        self.confirm_btn.setEnabled(valid)
+
+        fmt = self.format_input.currentText() if format_valid else "Format"
         self.preview.setText(
             f"<b>{name or 'Nom du tournoi'}</b><br>"
-            f"{self.format_input.currentText()} • "
-            f"{date} • "
-            f"{self.players_input.text()} joueurs"
+            f"{fmt} • {date or 'Date'}"
         )
 
     def _validate(self):
-        if len(self.date_input.text()) != 10:
-            self.date_input.setFocus()
-            return
         self.accept()
 
-    def get_data(self):
-        return {
-            "name": self.name_input.text(),
-            "format": self.format_input.currentText(),
-            "date": self.date_input.text(),
-            "players": int(self.players_input.text()),
-        }
-
     # =====================
-    # Edit mode
+    # Public API
     # =====================
-    def _load_data(self, data: dict):
-        self.name_input.setText(data.get("name", ""))
-        self.format_input.setCurrentText(data.get("format", ""))
-        self.date_input.setText(data.get("date", ""))
-        self.players_input.setText(str(data.get("players", "")))
 
-        self._update_preview()
+    def build_tournament(self, tournament_id: int) -> Tournament:
+        """
+        Utilisé en mode création.
+        """
+        return Tournament(
+            id=tournament_id,
+            name=self.name_input.text().strip(),
+            format=self.format_input.currentText().strip(),
+            date=self.date_input.text(),
+            players=[],
+        )
+
+    def apply_changes(self):
+        """
+        Utilisé en mode édition.
+        """
+        if not self._tournament:
+            return
+
+        self._tournament.name = self.name_input.text().strip()
+        self._tournament.format = self.format_input.currentText().strip()
+        self._tournament.date = self.date_input.text()
+
+
+
+
+class ComboBoxItemDelegate(QStyledItemDelegate):
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        size.setHeight(42)  # 👈 hauteur réelle des items
+        return size

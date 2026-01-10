@@ -6,14 +6,17 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
+from core.tournament import Tournament
 from ui.tournaments.upcoming_view import UpcomingView
 from ui.tournaments.launch_view import LaunchView
 from ui.tournaments.historic_view import HistoricView
+from ui.tournaments.dialogs.create_tournament import CreateTournamentDialog
 
 
 class TournamentViewMain(QWidget):
     """
     Vue principale de la page Tournament.
+    Orchestration entre Upcoming / Launch / Historic.
     """
 
     def __init__(self, parent=None):
@@ -23,10 +26,11 @@ class TournamentViewMain(QWidget):
         self.setObjectName("TournamentViewMain")
 
         self._build_ui()
+        self._connect_views()
 
-    # =========================
+    # ======================================================
     # UI
-    # =========================
+    # ======================================================
     def _build_ui(self):
         root_layout = QVBoxLayout(self)
         root_layout.setContentsMargins(0, 0, 0, 0)
@@ -43,11 +47,9 @@ class TournamentViewMain(QWidget):
         top_layout.setContentsMargins(0, 0, 0, 0)
         top_layout.setSpacing(20)
 
-        # === Upcoming (LEFT)
         self.upcoming_container = self._build_upcoming_container()
         top_layout.addWidget(self.upcoming_container, 1)
 
-        # === Launch (RIGHT)
         self.launch_container = self._build_launch_container()
         top_layout.addWidget(self.launch_container, 2)
 
@@ -59,9 +61,9 @@ class TournamentViewMain(QWidget):
         self.historic_container = self._build_historic_container()
         root_layout.addWidget(self.historic_container, 0)
 
-    # =========================
+    # ======================================================
     # Sub-containers
-    # =========================
+    # ======================================================
     def _build_upcoming_container(self):
         frame = QFrame()
         frame.setObjectName("UpcomingContainer")
@@ -97,8 +99,55 @@ class TournamentViewMain(QWidget):
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # 🔥 Intégration réelle de HistoricView
         self.historic_view = HistoricView(self)
         layout.addWidget(self.historic_view)
 
         return frame
+
+    # ======================================================
+    # Connections (POINT CLÉ)
+    # ======================================================
+    def _connect_views(self):
+        # Launch → Upcoming
+        self.launch_view.tournament_taken.connect(
+            self.upcoming_view.hide_tournament_card
+        )
+
+        self.launch_view.tournament_cancelled.connect(
+            self.upcoming_view.show_tournament_card
+        )
+
+        # Upcoming → Launch
+        self.upcoming_view.launch_requested.connect(
+            self._launch_from_card
+        )
+
+        # Launch → Edit
+        self.launch_view.edit_requested.connect(
+            self._edit_from_launch
+        )
+
+    # ======================================================
+    # Actions
+    # ======================================================
+    def _launch_from_card(self, tournament: Tournament):
+        """
+        Lance un tournoi dans LaunchView (clic droit).
+        """
+        if self.launch_view._current_tournament:
+            return
+
+        self.launch_view._load_tournament(tournament)
+        self.upcoming_view.hide_tournament_card(tournament.id)
+
+    def _edit_from_launch(self, tournament: Tournament):
+        dialog = CreateTournamentDialog(self, tournament=tournament)
+
+        if not dialog.exec():
+            return
+
+        dialog.apply_changes()
+
+        # Rafraîchir les deux vues
+        self.upcoming_view.refresh_tournament(tournament)
+        self.launch_view._load_tournament(tournament)
